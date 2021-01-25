@@ -1,4 +1,4 @@
-/* [1] 비동기. ex. 파일 시스템 */
+/* [1] 비동기. nodeJS에서 file 읽기/쓰기 */
 
 const fs = require('fs');
 const util = require('util');
