@@ -1,10 +1,11 @@
+const bodyParser = require('body-parser');
 const { kdf } = require('crypto-js');
 const util = require('util'),
     express = require('express');
 
 // custom moudle
-const Pool = require('./pool'),
-    Mydb = require('./mydb');
+const Pool = require('./pool');
+const rest = require('./rest');
 
 const pool = new Pool();    // web server 가 시작될 때 한 번만 pool 실행되면 되므로, index.js에서 선언
 
@@ -17,29 +18,26 @@ app.set('views', __dirname + '/views');
 app.set('view engine', 'ejs');
 app.engine('html', require('ejs').renderFile);
 
-app.get('/', (req,res) => {
-    // res.send("Hello NodeJS!!");
-    // res.json(testJson);
-    res.render('index', {name:'홍길동'});
+app.use( (req,res,next) => {
+    res.header("Access-Control-Allow-Origin", req.headers.origin);
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header("Access-Control-Allow-Headers", "X-Requested-With");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Methods","PUT, GET, POST, DELETE, OPTIONS");
+
+    if(req.method == 'OPTIONS'){
+        res.status(200).end();
+    }else{
+        next();
+    }
 });
 
-// : -> @PathVariable
-app.get('/test/:email', (req,res)=>{
-    testJson.email = req.params.email;
-    testJson.addr = req.query.addr;   // req.query = url?addr=
-    res.json(testJson);
-});
+// ex) PUT : body에 json 실려오기 때문에
+// package.json - dependencies에 'body-parser' library
+app.use(bodyParser.json({limit: '10mb'}));   // json 크기가 클 경우를 대비해 10mb로 제한
+app.use(bodyParser.urlencoded({limit: '10mb', extended:true}));
 
-// ex) db pool
-app.get('/dbtest/:user', (req,res)=>{
-    let user = req.params.user;
-    let mydb = new Mydb(pool);
-    mydb.execute(conn=>{
-        conn.query("select * from User where uid=?", [user], (err, ret)=>{
-            res.json(ret);
-        });
-    })
-});
+rest(app,pool);
 
 // express 실행
 const server = app.listen(7000, function(){
